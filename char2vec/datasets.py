@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import torch
 from gensim.models import Word2Vec, KeyedVectors
-from config import *
+from .config import *
 
 #word2vec을 이용한 dataset
 class Char2VecDatasetGENSIM(Dataset):
@@ -23,7 +23,6 @@ class Char2VecDatasetGENSIM(Dataset):
         
         # 행별로 url을 character별로 쪼개서 리스트로 가공한다.
         df['url'] = df.apply(lambda x: [char for char in x['url']], axis=1)
-        print(f"Kwars:{kwargs}, args:{file_paths}")
 
         if len(kwargs) > 1:
             for key, item in kwargs.items():
@@ -32,6 +31,8 @@ class Char2VecDatasetGENSIM(Dataset):
                     self.char2vec_model = KeyedVectors.load(item)
                 if key=='embedded_dim':
                     self.embedded_dim = item
+                if key=='max_length':
+                    self.max_length = item
         elif len(kwargs) == 1:
             if 'char2vec_path' in kwargs.keys(): self.char2vec_model = KeyedVectors.load(kwargs['char2vec_path'])
 
@@ -41,21 +42,37 @@ class Char2VecDatasetGENSIM(Dataset):
             char2vec_model = Word2Vec(df['url'], vector_size=self.embedded_dim, window=5, sg=1, workers=4)
             self.char2vec_model = char2vec_model.wv
             print("finish")
-        print(self.char2vec_model.key_to_index)
         # chars를 embedded vector로 변환하여 저장
-        embedded_chars = []
-        for idx, x in df.iterrows():
-            char_list = x['url']
-            label = x['label']
-            embedded_char = [self.char2vec_model[char] if char in self.char2vec_model.key_to_index.keys() else np.random.rand(self.embedded_dim).tolist() for char in char_list ]
-            embedded_chars.append(embedded_char)
-        print(embedded_chars)
-        embedded_chars = np.array(embedded_chars)
-        print(embedded_chars.shape)
-        self.data = torch.tensor(embedded_chars, dtype=torch.float64)
-        print(self.data)
-        self.label = torch.tensor(df['label'].values,dtype=torch.long)
-        print(self.label)
+
+
+        def row_func(x):
+            return_arr = np.full(80,len(self.char2vec_model.key_to_index),dtype=np.int64)
+
+            # 최대 max_length까지 맞춘다.
+            if len(x) > self.max_length:
+                x = x[:self.max_length]
+
+            for i in range(len(x)):
+                if x[i] in self.char2vec_model.key_to_index.keys():
+                    return_arr[i] = self.char2vec_model.key_to_index[x[i]]
+                else:
+                    return_arr[i] = len(self.char2vec_model.key_to_index)
+            return return_arr
+        embedded_chars = df['url'].apply(row_func).values
+        
+        """
+            url을 char단위로 정수 인코딩하여 저장
+            self.data = [
+                [0, 1, 2, 3, -1],
+                [1, 6, 3, -1, -1],
+                ...
+                [2, 3, 10, 23, 3]
+            ]
+        """
+        embedded_chars = np.stack(embedded_chars, axis=0)
+        self.data = torch.tensor(embedded_chars, dtype=torch.long)
+        self.label = torch.tensor(df['label'].values, dtype=torch.long)
+        
 
     def __getitem__(self, idx):
         return self.data[idx], self.label[idx]

@@ -3,11 +3,9 @@ from gensim.models import Word2Vec, KeyedVectors
 from datasets import Char2VecDataset
 import os
 import sys
-
-CUR_TO_DATASET_PATH = '../dataset/'
-BENIGN_PATH = os.path.join(CUR_TO_DATASET_PATH, 'benigns_10000.csv')
-PHISHING_PATH = os.path.join(CUR_TO_DATASET_PATH, 'phishings_10000.csv')
-MODEL_SAVE_PATH = os.path.join(CUR_TO_DATASET_PATH, 'model/char2vec.cv')
+import torch.nn as nn
+import torch
+from config import *
 
 def training():
 
@@ -17,13 +15,23 @@ def training():
     embedding_model = Word2Vec(char_list, sg=1, vector_size=100, window=5, workers=4)
     print("Finish training!")
     #key vector만 남긴다 (char와 그에 대응하는 임베딩 벡터)
-    embedding_model.wv.save_word2vec_format(MODEL_SAVE_PATH)
+    embedding_model.wv.save(MODEL_SAVE_PATH)
 
 def testing():
     loaded_model = KeyedVectors.load(MODEL_SAVE_PATH)
-    print(loaded_model['h'])
-
+    print(loaded_model.key_to_index)
+    print(len(loaded_model.vectors))
+    embedding = nn.Embedding.from_pretrained(torch.tensor(loaded_model.vectors, dtype=torch.float64))
+    embedding.requires_grad = False
+    print(loaded_model.key_to_index['2'])
+    gensim_vector = torch.tensor(loaded_model['2'])
+    embedding_vector = embedding(torch.tensor(loaded_model.key_to_index['2']))
+    print(gensim_vector)
+    print(embedding_vector)
+    print(gensim_vector==embedding_vector)
+    print(embedding)
     pass
+
 if __name__ == '__main__':
     if len(sys.argv) > 2:
         print("TOO MANY ARGS!")
