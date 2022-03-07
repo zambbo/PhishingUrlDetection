@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import torch
 from gensim.models import Word2Vec, KeyedVectors
-from .config import *
+from config import *
 
 #word2vec을 이용한 dataset
 class Char2VecDatasetGENSIM(Dataset):
@@ -101,7 +101,10 @@ class Char2VecDataset(Dataset):
         self.window_size = window_size
         if gensim:
             url_list = df['url'].values
-            char_list = [[*url] for url in url_list]
+            print("making char_list...")
+            print(url_list)
+            char_list = [[*url] for url in url_list if type(url) == str or type(url) == np.str]
+            print("finish making char_list...")
             self.char_list = char_list
         else:
             vocab, char_to_idx, idx_to_char, data = self.preprocessing(df)

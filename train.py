@@ -7,7 +7,6 @@ import torch.optim as optim
 import torch
 from config import *
 from char2vec.config import BENIGN_PATH, MODEL_SAVE_PATH, PHISHING_PATH
-import os
 from gensim.models import KeyedVectors
 from math import floor
 import copy
@@ -96,11 +95,9 @@ def main():
     for epoch in range(1, EPOCHS+1):
 
         tr_loss, tr_acc = train(model, device, train_loader, optimizer)
-
         print(f"Train Epoch : {epoch}\ttrain_loss : {tr_loss}\ttr_acc : {tr_acc}%")
 
         val_loss, val_acc = evaluate(model, device, test_loader)
-
         print(f"Test Epoch : {epoch}\ttest_loss : {val_loss}\ttest_acc : {val_acc}%")
 
         if val_acc > best_test_acc:
