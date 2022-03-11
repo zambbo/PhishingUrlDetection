@@ -13,3 +13,7 @@ BEST_MODEL_PATH = os.path.join(MODEL_DIR, MODEL_NAME)
 TRAIN_TEST_SPLIT_RATIO = 0.2
 
 NUM_WORKERS=4
+
+DATASET_DIR = './dataset'
+BENIGN_DIR = os.path.join(DATASET_DIR, 'benign_data')
+PHISHING_DIR = os.path.join(DATASET_DIR, 'phishing_data')
