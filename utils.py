@@ -2,7 +2,8 @@ import json
 import os
 from config import *
 import random
-
+import re
+from torch.utils.data import dataset, dataloader
 
 # json file을 불러온다
 # return : dict 
@@ -98,10 +99,41 @@ def getFilePaths(dir_path, url_type:int = 0, **kwargs):
     return path_list
 
 def split_url(url):
-    pass
+    url_regex = '(http|https|\w+):\/\/([^\/]+)\/?(.+)'
+    url_regex = re.compile(url_regex)
+    match_url = url_regex.match(url)
+
+    if match_url is None:
+        raise Exception(f"No Match Exception! url: {url}")
+    return match_url.group(1), match_url.group(2), match_url.group(3)
+
+def split_urls(urls):
+    protocols = []
+    domains = []
+    paths = []
+    for url in urls:
+        protocol, domain, path = split_url(url)
+        protocols.append(protocol)
+        domains.append(domain)
+        paths.append(path)
+    return protocols, domains, paths
+
+def url2charlist(url):
+    return [*url]
+        
 
 if __name__ == '__main__':
-    file_paths = getFilePaths(PHISHING_DIR, 1, shuffle=True)
-    file_paths = file_paths[:30]
+    benign_file_paths = getFilePaths(BENIGN_DIR, 0, shuffle=True)
+    phishing_file_paths = getFilePaths(PHISHING_DIR, 1, shuffle=True)
+    print(f"benign_file_num:{len(benign_file_paths)}, phishing_file_num:{len(phishing_file_paths)}")
+    # file_paths = getFilePaths(BENIGN_DIR, 0, shuffle=True)
+    # file_paths = file_paths[0]
+    # benign_urls = getUrls_f(file_paths, 0)
+    # file_paths = getFilePaths(PHISHING_DIR, 1, shuffle=True)
+    # file_paths = file_paths[0]
+    # phishing_urls = getUrls_f(file_paths, 1)
+    # print(f"benign_length: {len(benign_urls)}, phishing_length: {len(phishing_urls)}")
+    # urls = getUrls_f(file_paths, 0, max_len=2)
+    # urls = list(map(url2charlist, urls))
+    # print(urls)
 
-    print(getUrls_f(file_paths, 1, max_len=2))
