@@ -4,10 +4,12 @@ import numpy as np
 import torch
 from gensim.models import Word2Vec, KeyedVectors
 from config import *
+from ..utils import *
 
 #word2vec을 이용한 dataset
 class Char2VecDatasetGENSIM(Dataset):
-    def __init__(self, training=False, *file_paths, **kwargs):
+    def __init__(self, training=False, json:bool = True, *file_paths, **kwargs):
+            
         # path가 1개 이상일 경우 concatenate해서 df를 구성한다.
         if len(file_paths) > 1:
             print("Reading File...")
