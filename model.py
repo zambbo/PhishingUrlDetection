@@ -80,14 +80,16 @@ class PDTextCNN(nn.Module):
 
 def main():
 
-    dataset = PDDataset(benign_file_num=1, phishing_file_num=5, domain_max_len=100, path_max_len=100)
+    dataset = PDDataset(BENIGN_PATH, PHISHING_PATH)
     print("-"*50)
     domain_char2vec = KeyedVectors.load(CHAR2VEC_DOMAIN_MODEL_SAVE_PATH)
     path_char2vec = KeyedVectors.load(CHAR2VEC_PATH_MODEL_SAVE_PATH)
-
+    dataloader = DataLoader(dataset, batch_size=64, shuffle=True)
     model = PDTextCNN(domain_char2vec=domain_char2vec, path_char2vec=path_char2vec, embedding_dim=100, dim_channel=10, kernel_wins=[3,4,5], num_classes=2)
 
-    for data, label in dataset:
+    for data, label in dataloader:
+        print(data)
+        print(label)
         print(model(data))
         
     # dataset = Char2VecDatasetGENSIM(False, BENIGN_PATH, PHISHING_PATH, char2vec_path = MODEL_SAVE_PATH, embedded_dim = 100, max_length = 80)

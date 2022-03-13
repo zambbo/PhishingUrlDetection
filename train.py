@@ -1,12 +1,11 @@
 from model import PDTextCNN
 from torch.utils.data import DataLoader
 from torch.utils.data.dataset import random_split
-from char2vec.datasets import Char2VecDatasetGENSIM
+from char2vec.datasets import Char2VecDatasetGENSIM, PDDataset
 import torch.nn.functional as F
 import torch.optim as optim
 import torch
 from config import *
-from char2vec.config import BENIGN_PATH, MODEL_SAVE_PATH, PHISHING_PATH
 from gensim.models import KeyedVectors
 from math import floor
 import copy
@@ -20,7 +19,10 @@ def train(model, device, train_dataloader, optimizer):
     for batch_idx, (data, label) in tqdm(enumerate(train_dataloader)):
         
         # data와 label을 device에 fetch한다.
-        data, label = data.to(device), label.to(device)
+        domain, path = data
+        domain, path = domain.to(device), path.to(device)
+        data = (domain, path)
+        label = label.to(device)
         
         # 이전 배치에서 계산된 optimizer의 gradient값을 초기화
         optimizer.zero_grad()
@@ -51,7 +53,10 @@ def evaluate(model, device, evaluate_dataloader):
     corrects, test_loss = 0.0, 0
 
     for batch_id, (data, label) in tqdm(enumerate(evaluate_dataloader)):
-        data, label = data.to(device), label.to(device)
+        domain, path = data
+        domain, path = domain.to(device), path.to(device)
+        data = (domain, path)
+        label = label.to(device)
 
         logit = model(data)
         loss = F.cross_entropy(logit, label)
@@ -72,15 +77,16 @@ def evaluate(model, device, evaluate_dataloader):
 
 def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    char2vec = KeyedVectors.load(MODEL_SAVE_PATH)
+    domain_char2vec = KeyedVectors.load(CHAR2VEC_DOMAIN_MODEL_SAVE_PATH)
+    path_char2vec = KeyedVectors.load(CHAR2VEC_PATH_MODEL_SAVE_PATH)
 
-    model = PDTextCNN(char2vec, 100, 10, [3,4,5], 2).to(device)
+    model = PDTextCNN(domain_char2vec=domain_char2vec, path_char2vec=path_char2vec, embedding_dim=100, dim_channel=10, kernel_wins=[3,4,5], num_classes=2).to(device)
 
     optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
     best_test_acc = -1
 
-    dataset = Char2VecDatasetGENSIM(False, BENIGN_PATH, PHISHING_PATH, char2vec_path = MODEL_SAVE_PATH, embedded_dim = 100, max_length = 80)
+    dataset = PDDataset(BENIGN_PATH, PHISHING_PATH)
 
     test_len = floor(len(dataset) * TRAIN_TEST_SPLIT_RATIO)
     train_len = len(dataset) - test_len
@@ -107,7 +113,7 @@ def main():
 
     model.load_state_dict(model_best_state_dict)
 
-    torch.save(model, BEST_MODEL_PATH)        
+    #torch.save(model, BEST_MODEL_PATH)        
     
 
 
