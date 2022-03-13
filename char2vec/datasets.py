@@ -51,8 +51,8 @@ class PDDataset(Dataset):
         for data in tqdm(datas):
             _, domain, path = data
 
-            encoded_domains.append(self.encoding(domain, url_type))
-            encoded_paths.append(self.encoding(path, url_type))
+            encoded_domains.append(self.encoding(domain, 0))
+            encoded_paths.append(self.encoding(path, 1))
 
         encoded_domains = np.stack(encoded_domains, axis=0)
         encoded_paths = np.stack(encoded_paths, axis=0)
@@ -62,7 +62,7 @@ class PDDataset(Dataset):
 
         label = torch.tensor(label, dtype=torch.long)
 
-        return (encoded_domains, encoded_paths, label)
+        return (encoded_domains, encoded_paths), label
 
     def encoding(self, url, domainOrPath = 0):
         
@@ -254,12 +254,14 @@ class Char2VecDataset(Dataset):
         return vocab, char_to_idx, idx_to_char, data
 
 if __name__ == '__main__':
-    b_ds = PDDataset(2, 0)
-    p_ds = PDDataset(0, 2)
-    ds = ConcatDataset([b_ds, p_ds])
+    ds = PDDataset(0, 5)
     dl = DataLoader(ds, batch_size=64, shuffle=True)
 
-    for domain, path, label in tqdm(ds):
+    for (domain, path), label in tqdm(dl):
+        print(len(domain))
+        print(len(domain[0]))
+        print(len(path))
+        print(len(label))
         print(domain)
         print(path)
         print(label)

@@ -4,7 +4,7 @@ from config import *
 import random
 import re
 from torch.utils.data import dataset, dataloader
-
+import numpy as np
 # json file을 불러온다
 # return : dict 
 def loadJson(filename):
@@ -120,7 +120,25 @@ def split_urls(urls):
 
 def url2charlist(url):
     return [*url]
-        
+
+# [
+#   [url, label],
+#   [url, label],
+#   ...
+# ]    
+def getDataSetNLabel(filenames, url_type:int = 0, max_len:int = -1):
+    urls = getUrls_f(filenames, url_type, max_len)
+    protocols, domains, paths = split_urls(urls)
+
+    if url_type == 0:
+        data = [(protocol, domain, path) for protocol, domain, path in zip(protocols, domains, paths)]
+    elif url_type == 1:
+        data = [(protocol, domain, path) for protocol, domain, path in zip(protocols, domains, paths)]
+
+    label = [url_type]*len(data)
+    label = np.array(label)
+    
+    return data, label
 
 if __name__ == '__main__':
     benign_file_paths = getFilePaths(BENIGN_DIR, 0, shuffle=True)
