@@ -8,7 +8,7 @@ import sys
 sys.path.append('..')
 from utils import *
 from tqdm import tqdm
-
+from sklearn.utils import shuffle
 # 큰 csv파일을 읽어와서 chunksize별로 해보자
 class PDDataset(Dataset):
     def __init__(self, benign_path, phishing_path, benign_url_num = -1, phishing_url_num = -1, domain_max_len = 100, path_max_len = 100):
@@ -22,12 +22,12 @@ class PDDataset(Dataset):
         phishing_df = pd.concat(phishing_chunk)
 
         if benign_url_num != -1:
-            benign_df = benign_file_paths[:benign_url_num]
+            benign_df = benign_df.iloc[:benign_url_num,:]
         if phishing_url_num != -1:
-            phishing_df = phishing_file_paths[:phishing_url_num]
+            phishing_df = phishing_df.iloc[:phishing_url_num,:]
         
-        self.benign_df = benign_df
-        self.phishing_df = phishing_df
+        self.benign_df = shuffle(benign_df)
+        self.phishing_df = shuffle(phishing_df)
 
         self.df = pd.concat([benign_df, phishing_df], axis=0)
 
@@ -44,6 +44,8 @@ class PDDataset(Dataset):
     def __getitem__(self, index):
 
         url = self.df['url'].iloc[index]
+        if type(url) != str:
+            url = str(url)
         try:
             _, domain, path = split_url(url)
         except Exception as e:

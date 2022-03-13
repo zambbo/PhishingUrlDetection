@@ -86,7 +86,7 @@ def main():
 
     best_test_acc = -1
 
-    dataset = PDDataset(BENIGN_PATH, PHISHING_PATH)
+    dataset = PDDataset(BENIGN_PATH, PHISHING_PATH, benign_url_num=10000, phishing_url_num=10000)
 
     test_len = floor(len(dataset) * TRAIN_TEST_SPLIT_RATIO)
     train_len = len(dataset) - test_len
@@ -113,7 +113,7 @@ def main():
 
     model.load_state_dict(model_best_state_dict)
 
-    #torch.save(model, BEST_MODEL_PATH)        
+    torch.save(model, BEST_MODEL_PATH)        
     
 
 
