@@ -9,60 +9,41 @@ sys.path.append('..')
 from utils import *
 from tqdm import tqdm
 from sklearn.utils import shuffle
-# 큰 csv파일을 읽어와서 chunksize별로 해보자
+
+# for final_dataset.csv
 class PDDataset(Dataset):
-    def __init__(self, benign_path, phishing_path, benign_url_num = -1, phishing_url_num = -1, domain_max_len = 100, path_max_len = 100):
-        
-        benign_chunk = pd.read_csv(benign_path, chunksize=1000)
-        benign_chunk = list(benign_chunk)
-        benign_df = pd.concat(benign_chunk)
+    def __init__(self, file_path, domain_max_len = 100, path_max_len = 100):
 
-        phishing_chunk = pd.read_csv(phishing_path, chunksize=1000)
-        phishing_chunk = list(phishing_chunk)
-        phishing_df = pd.concat(phishing_chunk)
+        self.df = pd.read_csv(file_path, index_col=0)
 
-        if benign_url_num != -1:
-            benign_df = benign_df.iloc[:benign_url_num,:]
-        if phishing_url_num != -1:
-            phishing_df = phishing_df.iloc[:phishing_url_num,:]
-        
-        self.benign_df = shuffle(benign_df)
-        self.phishing_df = shuffle(phishing_df)
-
-        self.df = pd.concat([benign_df, phishing_df], axis=0)
-
-        # domain과 path를 따로
         self.domain_char2vec = KeyedVectors.load(CHAR2VEC_DOMAIN_MODEL_SAVE_PATH)
         self.path_char2vec = KeyedVectors.load(CHAR2VEC_PATH_MODEL_SAVE_PATH)
 
         self.domain_max_len = domain_max_len
         self.path_max_len = path_max_len
-    
-    def __len__(self):
-        return len(self.df)
-    
-    def __getitem__(self, index):
 
-        url = self.df['url'].iloc[index]
+        self.label = self.df['label'].values
+
+    def __len__(self):
+        return len(self.df)    
+    
+    def __getitem__(self, idx):
+        
+        url = self.df['sentence'].iloc[idx]
+
         if type(url) != str:
             url = str(url)
-        try:
-            _, domain, path = split_url(url)
-        except Exception as e:
-            print(e)
-            domain = url
-            path = url
-
-        label = self.df['label'].iloc[index]
+        
+        _, domain, path = split_url(url)
 
         encoded_domain = self.encoding(domain, 0)
         encoded_path = self.encoding(path, 1)
 
         encoded_domain = torch.tensor(encoded_domain, dtype=torch.long)
         encoded_path = torch.tensor(encoded_path, dtype=torch.long)
-
+        
+        label = self.df['label'].iloc[idx]
         label = torch.tensor(label, dtype=torch.long)
-
 
         return (encoded_domain, encoded_path), label
 
@@ -91,6 +72,89 @@ class PDDataset(Dataset):
                 encoded_vector[i] = len(char2vec.key_to_index)
         
         return encoded_vector
+
+# 큰 csv파일을 읽어와서 chunksize별로 해보자
+# class PDDataset(Dataset):
+#     def __init__(self, benign_path, phishing_path, benign_url_num = -1, phishing_url_num = -1, domain_max_len = 100, path_max_len = 100):
+        
+#         benign_chunk = pd.read_csv(benign_path, chunksize=1000)
+#         benign_chunk = list(benign_chunk)
+#         benign_df = pd.concat(benign_chunk)
+
+#         phishing_chunk = pd.read_csv(phishing_path, chunksize=1000)
+#         phishing_chunk = list(phishing_chunk)
+#         phishing_df = pd.concat(phishing_chunk)
+
+#         if benign_url_num != -1:
+#             benign_df = benign_df.iloc[:benign_url_num,:]
+#         if phishing_url_num != -1:
+#             phishing_df = phishing_df.iloc[:phishing_url_num,:]
+        
+#         self.benign_df = shuffle(benign_df)
+#         self.phishing_df = shuffle(phishing_df)
+
+#         self.df = pd.concat([benign_df, phishing_df], axis=0)
+
+#         # domain과 path를 따로
+#         self.domain_char2vec = KeyedVectors.load(CHAR2VEC_DOMAIN_MODEL_SAVE_PATH)
+#         self.path_char2vec = KeyedVectors.load(CHAR2VEC_PATH_MODEL_SAVE_PATH)
+
+#         self.domain_max_len = domain_max_len
+#         self.path_max_len = path_max_len
+    
+#     def __len__(self):
+#         return len(self.df)
+    
+#     def __getitem__(self, index):
+
+#         url = self.df['url'].iloc[index]
+#         if type(url) != str:
+#             url = str(url)
+#         try:
+#             _, domain, path = split_url(url)
+#         except Exception as e:
+#             print(e)
+#             domain = url
+#             path = url
+
+#         label = self.df['label'].iloc[index]
+
+#         encoded_domain = self.encoding(domain, 0)
+#         encoded_path = self.encoding(path, 1)
+
+#         encoded_domain = torch.tensor(encoded_domain, dtype=torch.long)
+#         encoded_path = torch.tensor(encoded_path, dtype=torch.long)
+
+#         label = torch.tensor(label, dtype=torch.long)
+
+
+#         return (encoded_domain, encoded_path), label
+
+#     def encoding(self, url, domainOrPath = 0):
+        
+#         # string -> char list
+#         char_list = url2charlist(url)
+
+#         #domain
+#         if domainOrPath == 0:
+#             char2vec = self.domain_char2vec
+#             max_len = self.domain_max_len
+#         #path
+#         elif domainOrPath == 1:
+#             char2vec = self.path_char2vec
+#             max_len = self.path_max_len
+        
+#         encoded_vector = np.full(max_len, len(char2vec.key_to_index)) # OOV단어의 경우에는 단어장 제일 끝 번호로 초기화
+
+        
+#         for i in range(min(len(char_list), max_len)):
+            
+#             if char_list[i] in char2vec.key_to_index.keys():
+#                 encoded_vector[i] = char2vec.key_to_index[char_list[i]]
+#             else:
+#                 encoded_vector[i] = len(char2vec.key_to_index)
+        
+#         return encoded_vector
 
 # class PDDataset(Dataset):
 #     def __init__(self, benign_file_num:int = 5, phishing_file_num:int = 300, domain_max_len = 100, path_max_len = 100):

@@ -19,7 +19,7 @@ BENIGN_DIR = os.path.join(DATASET_DIR, 'benign_data')
 PHISHING_DIR = os.path.join(DATASET_DIR, 'phishing_data')
 BENIGN_PATH = os.path.join(DATASET_DIR, 'benigns.csv')
 PHISHING_PATH = os.path.join(DATASET_DIR, 'phishings.csv')
-
+FINAL_DATASET_PATH = os.path.join(DATASET_DIR, 'final_dataset.csv')
 
 CHAR2VEC_DOMAIN_MODEL_SAVE_PATH = os.path.join(DATASET_DIR, 'model/domain_char2vec_final.cv')
 CHAR2VEC_PATH_MODEL_SAVE_PATH = os.path.join(DATASET_DIR, 'model/path_char2vec_final.cv')

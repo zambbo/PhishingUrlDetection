@@ -5,6 +5,9 @@ import random
 import re
 from torch.utils.data import dataset, dataloader
 import numpy as np
+import pandas as pd
+from tqdm import tqdm
+
 # json file을 불러온다
 # return : dict 
 def loadJson(filename):
@@ -29,6 +32,8 @@ def getUrls(json_dict, url_type:int = 0, max_len:int = -1):
 
     if max_len != -1:
         if len(ret_url_list) > max_len: ret_url_list = ret_url_list[:max_len]
+    
+    random.shuffle(ret_url_list)
 
     return ret_url_list
 
@@ -104,8 +109,14 @@ def split_url(url):
     match_url = url_regex.match(url)
 
     if match_url is None:
-        raise Exception(f"No Match Exception! url: {url}")
-    return match_url.group(1), match_url.group(2), match_url.group(3)
+        protocol = None
+        url = url
+        path = url
+    else:
+        protocol, url, path = match_url.groups()
+
+        #raise Exception(f"No Match Exception! url: {url}")
+    return protocol, url, path
 
 def split_urls(urls):
     protocols = []
@@ -141,9 +152,36 @@ def getDataSetNLabel(filenames, url_type:int = 0, max_len:int = -1):
     return data, label
 
 if __name__ == '__main__':
-    benign_file_paths = getFilePaths(BENIGN_DIR, 0, shuffle=True)
-    phishing_file_paths = getFilePaths(PHISHING_DIR, 1, shuffle=True)
-    print(f"benign_file_num:{len(benign_file_paths)}, phishing_file_num:{len(phishing_file_paths)}")
+    df = pd.read_csv('./dataset/final_dataset.csv', index_col=0)
+    df['sentence'].apply(lambda x: split_url(x))
+
+    # benign_file_paths = getFilePaths(BENIGN_DIR, 0, shuffle=True)
+    # phishing_file_paths = getFilePaths(PHISHING_DIR, 1, shuffle=True)
+    # print(f"benign_file_num:{len(benign_file_paths)}, phishing_file_num:{len(phishing_file_paths)}")
+    # benigns_url = []
+    # phishings_url = []
+    # benign_file_paths = benign_file_paths[:200]
+    # phishing_file_paths = phishing_file_paths[:1000]
+
+    # for benign_file_path in tqdm(benign_file_paths):
+    #     benign_urls = getUrls_f(benign_file_path, 0, 100)
+    #     benigns_url.extend(benign_urls)
+    
+    # for phishing_file_path in tqdm(phishing_file_paths):
+    #     phishing_urls = getUrls_f(phishing_file_path, 1, 20)
+
+    #     phishings_url.extend(phishing_urls)
+    
+    # sentence_label = []
+    # for benign_url in benigns_url:
+    #     sentence_label.append((benign_url, 0))
+    # for phishing_url in phishings_url:
+    #     sentence_label.append((phishing_url, 1))
+    
+    # df = pd.DataFrame(sentence_label, columns=['sentence', 'label'])
+    # df.to_csv('./dataset/final_dataset.csv')
+
+
     # file_paths = getFilePaths(BENIGN_DIR, 0, shuffle=True)
     # file_paths = file_paths[0]
     # benign_urls = getUrls_f(file_paths, 0)
